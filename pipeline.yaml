@@ -1,0 +1,205 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: git-files-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: update-deployment
+spec:
+  workspaces:
+    - name: source
+  params:
+    - name: pathToManifest
+      description: The path to the manifest flie
+    - name: dbImageUrl
+      description: Url of db image
+      default: "localhost:5000/roar-db:1.0.0"
+    - name: webImageUrl
+      description: Url of web image
+      default: "localhost:5000/roar-web:1.0.0"
+  steps:
+    - name: update-manifest-for-db-image
+      image: alpine
+      env:
+        - name: SHARED_WORKSPACE_PATH
+          value: $(workspaces.source.path)
+      command: ["sed"]
+      args:
+        - "-i"
+        - "-e"
+        - "s;__DBIMAGE__;$(params.dbImageUrl);g"
+        - "$(workspaces.source.path)/$(params.pathToManifest)"
+    - name: update-manifest-for-web-image
+      image: alpine
+      env:
+      - name: SHARED_WORKSPACE_PATH
+        value: $(workspaces.source.path)
+      command: ["sed"]
+      args:
+        - "-i"
+        - "-e"
+        - "s;__WEBIMAGE__;$(params.webImageUrl);g"
+        - "$(workspaces.source.path)/$(params.pathToManifest)"
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: deploy-to-cluster
+spec:
+  description:
+    Run kubectl to deploy manifest to cluster
+  workspaces:
+    - name: source
+  params:
+    - name: pathToManifest
+      description: The path to the manifest file
+  steps:
+    - name: run-kubectl
+      image: lachlanevenson/k8s-kubectl
+      env:
+        - name: SHARED_WORKSPACE_PATH
+          value: $(workspaces.source.path)
+      command: ["kubectl"]
+      args: 
+        - "apply"
+        - "-f"
+        - "$(workspaces.source.path)/$(params.pathToManifest)"
+---  
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: roar-pipeline
+spec:
+  params:
+    - name: gitUrl
+      description: git location for project with docker and k8s manifests
+    - name: gitRev
+      description: revision to use from Git
+    - name: dbImageUrl
+      description: url for database image
+    - name: webImageUrl
+      description: url for web image
+    - name: pathToContext
+      description: path to docker context
+    - name: pathToDbDockerfile
+      description: Path to dockerfile to build db image
+    - name: pathToWebDockerfile
+      description: Path to dockerfile to build web image
+    - name: pathToManifest
+      description: Path to Kubernetes manifest file
+  workspaces: 
+    - name: shared-workspace
+  tasks:
+    - name: fetch-manifests
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.gitUrl)
+        - name: revision
+          value: $(params.gitRev)
+        - name: subdirectory
+          value: ""
+        - name: deleteExisting
+          value: "true"
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+    - name: build-db-image
+      taskRef:
+        name: kaniko
+      runAfter:
+        - fetch-manifests
+      params:
+      - name: IMAGE
+        value: $(params.dbImageUrl)
+      - name: DOCKERFILE
+        value: $(params.pathToDbDockerfile)
+      - name: CONTEXT
+        value: $(params.pathToContext)
+      - name: EXTRA_ARGS
+        value: ["--insecure","--skip-tls-verify"]
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: build-web-image
+      taskRef:
+        name: kaniko
+      runAfter:
+        - fetch-manifests
+      params:
+      - name: IMAGE
+        value: $(params.webImageUrl)
+      - name: DOCKERFILE
+        value: $(params.pathToWebDockerfile)
+      - name: CONTEXT
+        value: $(params.pathToContext)
+      - name: EXTRA_ARGS
+        value: ["--insecure", "--build-arg=warFile=roar.war", "--skip-tls-verify"]
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: update-deployment
+      taskRef:
+        name: update-deployment
+      runAfter: [build-web-image, build-db-image]
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: pathToManifest
+          value: "$(params.pathToManifest)"
+        - name: dbImageUrl
+          value: "$(params.dbImageUrl)"
+        - name: webImageUrl
+          value: "$(params.webImageUrl)"    
+    - name: deploy-to-cluster
+      taskRef:
+        name: deploy-to-cluster
+      runAfter:
+        - update-deployment
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: pathToManifest
+          value: "$(params.pathToManifest)"       
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: roar-pipe-run
+spec:
+  serviceAccountName: sa-tek
+  pipelineRef:
+    name: roar-pipeline
+  params:
+    - name: gitUrl
+      value:  https://github.com/skillrepos/tekton-docker-k8s.git
+    - name: gitRev
+      value: main
+    - name: dbImageUrl
+      value: 10.0.2.15:5000/roar-db:1.0.0
+    - name: webImageUrl
+      value: 10.0.2.15:5000/roar-web:1.0.0
+    - name: pathToContext
+      value: ./
+    - name: pathToDbDockerfile
+      value: "Dockerfile_roar_db_image"
+    - name: pathToWebDockerfile
+      value: Dockerfile_roar_web_image
+    - name: pathToManifest
+      value: "roar-complete.yaml"
+  workspaces:
+    - name: shared-workspace
+      persistentVolumeClaim:
+        claimName: git-files-pvc                                              
