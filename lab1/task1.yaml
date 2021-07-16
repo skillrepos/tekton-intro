@@ -1,0 +1,66 @@
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: output-pv
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 100M
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/output"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: output-pvc
+spec:
+  storageClassName: manual
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100M
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: example-task
+spec:
+  workspaces:
+    - name: output
+      description: Folder where output goes
+  steps:
+    - name: hello-world1
+      image: localhost:5000/ubuntu:local
+      command: ["/bin/bash"]
+      args: ["-c", "echo Hello World 1 > $(workspaces.output.path)/message1.txt"]
+    - name: hello-world2
+      image: localhost:5000/ubuntu:local
+      script: |
+        #!/usr/bin/env bash
+        set -xe
+        echo Hello World 2! > $(workspaces.output.path)/message2.txt
+---
+# requires that localhost:5000/ubuntu:local exists and have been pushed to local insecure docker registry
+# requires that /mnt/output have been created and be accessible
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata: 
+  name: example-taskrun
+  namespace: default
+spec:
+  workspaces:
+  - name: output
+    persistentVolumeClaim:
+      claimName: output-pvc
+    subPath: messages
+  taskRef:
+    name: example-task
+
+        
