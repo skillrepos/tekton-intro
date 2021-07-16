@@ -1,0 +1,74 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: roar-pipeline
+spec:
+  params:
+    - name: gitUrl
+      description: git location for project with docker and k8s manifests
+    - name: gitRev
+      description: revision to use from Git
+    - name: dbImageUrl
+      description: url for database image
+    - name: webImageUrl
+      description: url for web image
+    - name: pathToContext
+      description: path to docker context
+    - name: pathToDbDockerfile
+      description: Path to dockerfile to build db image
+    - name: pathToWebDockerfile
+      description: Path to dockerfile to build web image
+    - name: pathToManifest
+      description: Path to Kubernetes manifest file
+  workspaces: 
+    - name: shared-workspace
+  tasks:
+    - name: fetch-manifests
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.gitUrl)
+        - name: revision
+          value: $(params.gitRev)
+        - name: subdirectory
+          value: ""
+        - name: deleteExisting
+          value: "true"
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+    - name: build-db-image
+      taskRef:
+        name: kaniko
+      runAfter:
+        - fetch-manifests
+      params:
+      - name: IMAGE
+        value: $(params.dbImageUrl)
+      - name: DOCKERFILE
+        value: $(params.pathToDbDockerfile)
+      - name: CONTEXT
+        value: $(params.pathToContext)
+      - name: EXTRA_ARGS
+        value: ["--insecure","--skip-tls-verify"]
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: build-web-image
+      taskRef:
+        name: kaniko
+      runAfter:
+        - fetch-manifests
+      params:
+      - name: IMAGE
+        value: $(params.webImageUrl)
+      - name: DOCKERFILE
+        value: $(params.pathToWebDockerfile)
+      - name: CONTEXT
+        value: $(params.pathToContext)
+      - name: EXTRA_ARGS
+        value: ["--insecure", "--build-arg=warFile=roar.war", "--skip-tls-verify"]
+      workspaces:
+        - name: source
+          workspace: shared-workspace 

@@ -1,0 +1,24 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: roar-pipeline
+spec:
+  params:
+    - name: gitUrl
+      description: git location for project with docker and k8s manifests
+    - name: gitRev
+      description: revision to use from Git
+    - name: dbImageUrl
+      description: url for database image
+    - name: webImageUrl
+      description: url for web image
+    - name: pathToContext
+      description: path to docker context
+    - name: pathToDbDockerfile
+      description: Path to dockerfile to build db image
+    - name: pathToWebDockerfile
+      description: Path to dockerfile to build web image
+    - name: pathToManifest
+      description: Path to Kubernetes manifest file
+  workspaces: 
+    - name: shared-workspace

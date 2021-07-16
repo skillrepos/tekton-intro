@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: roar-pipe-run
+spec:
+  serviceAccountName: sa-tek
+  pipelineRef:
+    name: roar-pipeline
+  params:
+    - name: gitUrl
+      value:  https://github.com/skillrepos/tekton-docker-k8s.git
+    - name: gitRev
+      value: main
+    - name: dbImageUrl
+      value: 10.0.2.15:5000/roar-db:1.0.0
+    - name: webImageUrl
+      value: 10.0.2.15:5000/roar-web:1.0.0
+    - name: pathToContext
+      value: ./
+    - name: pathToDbDockerfile
+      value: "Dockerfile_roar_db_image"
+    - name: pathToWebDockerfile
+      value: Dockerfile_roar_web_image
+    - name: pathToManifest
+      value: "roar-complete.yaml"
+  workspaces:
+    - name: shared-workspace
+      persistentVolumeClaim:
+        claimName: git-files-pvc                                              
