@@ -1,0 +1,18 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: update-deployment
+spec:
+  description:
+    Run sed to update manifests to latest images  
+  workspaces:
+    - name: source
+  params:
+    - name: pathToManifest
+      description: The path to the manifest flie
+    - name: dbImageUrl
+      description: Url of db image
+      default: "localhost:5000/roar-db:1.0.0"
+    - name: webImageUrl
+      description: Url of web image
+      default: "localhost:5000/roar-web:1.0.0"
