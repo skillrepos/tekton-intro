@@ -1,0 +1,13 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: roar-trigger-template
+  namespace: tekpipe
+spec:
+  params:
+  - name: gitrepositoryurl
+    description: The repository url to build and deploy.
+  - name: gitrevision
+    description: The revision to build and deploy.
+  - name: pr_num
+    description: The ServiceAccount under which to run the Pipeline.

@@ -1,0 +1,6 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: roar-trigger-template
+  namespace: tekpipe
+spec:

@@ -1,0 +1,43 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: roar-trigger-template
+  namespace: tekpipe
+spec:
+  params:
+  - name: gitrepositoryurl
+    description: The repository url to build and deploy.
+  - name: gitrevision
+    description: The revision to build and deploy.
+  - name: pr_num
+    description: The ServiceAccount under which to run the Pipeline.
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      generateName: roar-pipeline-
+    spec:
+      serviceAccountName: sa-tek
+      pipelineRef:
+        name: roar-pipeline
+      params:
+        - name: gitUrl
+          value: $(tt.params.gitrepositoryurl)
+        - name: gitRev
+          value: $(tt.params.gitrevision)
+        - name: dbImageUrl
+          value: 10.0.2.15:5000/roar-db:1.0.$(tt.params.pr_num)
+        - name: webImageUrl
+          value: 10.0.2.15:5000/roar-web:1.0.$(tt.params.pr_num)
+        - name: pathToContext
+          value: ./
+        - name: pathToDbDockerfile
+          value: "Dockerfile_roar_db_image"
+        - name: pathToWebDockerfile
+          value: Dockerfile_roar_web_image
+        - name: pathToManifest
+          value: "roar-complete.yaml"
+      workspaces:
+        - name: shared-workspace
+          persistentVolumeClaim:
+            claimName: git-files-pvc
