@@ -1,0 +1,35 @@
+kind: TaskRun
+apiVersion: tekton.dev/v1beta1
+metadata:
+  generateName: taskrun-debug-
+spec:
+  taskSpec:
+    steps:
+      - name: step1-force-fail   
+        image: alpine
+        script: |
+          exit 1
+      # check if the /tekton/steps/step-<step-name>/exitCode got created and contains the exit code
+      - name: step2-check-for-exitcode-file
+        image: alpine
+        script: |
+          xCode=`cat $(steps.step-step1-force-fail.exitCode.path)`
+          if [ $xCode == 1 ]; then
+              echo "matching exit code found"
+          else
+              echo "matching exit code not found."
+              exit 1
+          fi
+      # check if the symlink /tekton/steps/0/ got created
+      - name: step3-check-for-symlink
+        image: alpine
+        script: |
+          FILE=/tekton/steps/0/exitCode
+          if [ -f "$FILE" ]; then
+            echo "Symlink $FILE to record step exit code exists."
+          else
+            echo "$FILE does not exist."
+            exit 1
+          fi
+
+         
