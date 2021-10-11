@@ -1,4 +1,7 @@
+sudo minikube delete
 sudo minikube start --vm-driver=none --addons=registry --kubernetes-version=v1.19.0 --insecure-registry "10.0.0.0/24"
+sudo mv /home/diyuser3/.kube /home/diyuser3/.minikube $HOME
+sudo chown -R $USER $HOME/.kube $HOME/.minikube
 kubectl create ns tekpipe
 kubectl create ns roar
 kubectl create secret -n tekpipe docker-registry regcreds --docker-server=http://localhost:5000/v2 --docker-username=*** --docker-password=***
