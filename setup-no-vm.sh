@@ -11,8 +11,8 @@ curl -LO https://github.com/tektoncd/cli/releases/download/v0.17.1/tkn_0.17.1_Li
 sudo tar xvzf tkn_0.17.1_Linux_x86_64.tar.gz -C /usr/local/bin/ tkn
 kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/latest/tekton-dashboard-release.yaml
 
-kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml
-kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml
+kubectl apply -f https://storage.googleapis.com/tekton-releases/triggers/previous/v0.14.2/release.yaml
+kubectl apply -f https://storage.googleapis.com/tekton-releases/triggers/previous/v0.14.2/interceptors.yaml
 
 
 
