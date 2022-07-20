@@ -51,7 +51,7 @@ spec:
       - name: CONTEXT
         value: $(params.pathToContext)
       - name: EXTRA_ARGS
-        value: ["--insecure","--skip-tls-verify"]
+        value: ["--insecure", "--skip-tls-verify", "--no-push"]
       workspaces:
         - name: source
           workspace: shared-workspace
@@ -68,7 +68,7 @@ spec:
       - name: CONTEXT
         value: $(params.pathToContext)
       - name: EXTRA_ARGS
-        value: ["--insecure", "--build-arg=warFile=roar.war", "--skip-tls-verify"]
+        value: ["--insecure", "--build-arg=warFile=roar.war", "--skip-tls-verify", "--no-push"]
       workspaces:
         - name: source
           workspace: shared-workspace
