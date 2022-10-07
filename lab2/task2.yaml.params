@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: update-deployment
@@ -40,7 +40,7 @@ spec:
         - "s;__WEBIMAGE__;$(params.webImageUrl);g"
         - "$(workspaces.source.path)/$(params.pathToManifest)"
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: deploy-to-cluster
