@@ -12,7 +12,7 @@ spec:
   - name: pr_num
     description: The ServiceAccount under which to run the Pipeline.
   resourcetemplates:
-  - apiVersion: tekton.dev/v1beta1
+  - apiVersion: tekton.dev/v1alpha1
     kind: PipelineRun
     metadata:
       generateName: roar-pipeline-
