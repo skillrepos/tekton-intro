@@ -1,4 +1,4 @@
-apiVersion: triggers.tekton.dev/v1beta1
+apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
   name: roar-trigger-template
@@ -12,7 +12,7 @@ spec:
   - name: pr_num
     description: The ServiceAccount under which to run the Pipeline.
   resourcetemplates:
-  - apiVersion: tekton.dev/v1beta1
+  - apiVersion: tekton.dev/v1alpha1
     kind: PipelineRun
     metadata:
       generateName: roar-pipeline-
@@ -42,7 +42,7 @@ spec:
           persistentVolumeClaim:
             claimName: git-files-pvc  
 ---
-apiVersion: triggers.tekton.dev/v1beta1
+apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
   name: roar-triggerbinding
@@ -56,7 +56,7 @@ spec:
     - name: pr_num
       value: $(body.number)
 ---                                      
-apiVersion: triggers.tekton.dev/v1beta1
+apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
   name: rt-el
